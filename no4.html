@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>폭염 취약가구 모니터링 시스템</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f4f6fa;
+}
+
+header{
+    background:#1b4b9c;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    display:flex;
+    gap:20px;
+    padding:20px;
+}
+
+#map{
+    width:45%;
+    height:550px;
+    background:url("map.png");
+    background-size:cover;
+    background-position:center;
+    border-radius:15px;
+    position:relative;
+    box-shadow:0 2px 10px rgba(0,0,0,0.15);
+}
+
+#list{
+    width:55%;
+}
+
+.card{
+    background:white;
+    border-radius:15px;
+    padding:20px;
+    margin-bottom:15px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:scale(1.02);
+}
+
+.bar{
+    height:15px;
+    background:#ddd;
+    border-radius:20px;
+}
+
+.fill{
+    height:15px;
+    background:#e53935;
+    border-radius:20px;
+}
+
+.dot{
+    width:20px;
+    height:20px;
+    background:red;
+    border-radius:50%;
+    border:3px solid white;
+    box-shadow:0 0 15px red;
+    position:absolute;
+    cursor:pointer;
+    animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+    from{
+        transform:scale(1);
+        opacity:1;
+    }
+    to{
+        transform:scale(2);
+        opacity:0;
+    }
+}
+
+#detail{
+    background:white;
+    margin:20px;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+button{
+    border:none;
+    border-radius:10px;
+    padding:12px 20px;
+    color:white;
+    cursor:pointer;
+    margin-right:10px;
+}
+
+.red{
+    background:#d32f2f;
+}
+
+.blue{
+    background:#1976d2;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h1>🔥 폭염 취약가구 실시간 모니터링 시스템</h1>
+</header>
+
+<div class="container">
+
+<div id="map"></div>
+
+<div id="list"></div>
+
+</div>
+
+<div id="detail">
+지도나 카드를 클릭하면 상세 정보가 표시됩니다.
+</div>
+
+<script>
+
+const houses = [
+
+{
+id:"가구_01",
+address:"서울시 강북구 수유동 10-1",
+buildingAge:38,
+vulnerable:1,
+temperature:35.4,
+expected:2.3,
+actual:0.4,
+x:530,
+y:290
+},
+
+{
+id:"가구_02",
+address:"서울시 강북구 수유동 12-3",
+buildingAge:25,
+vulnerable:0,
+temperature:34.7,
+expected:2.1,
+actual:1.8,
+x:650,
+y:240
+},
+
+{
+id:"가구_03",
+address:"서울시 강북구 수유동 15-8",
+buildingAge:42,
+vulnerable:1,
+temperature:36.0,
+expected:2.4,
+actual:0.6,
+x:700,
+y:360
+}
+
+];
+
+houses.forEach(h=>{
+
+let cooling =
+1 - (h.actual/h.expected);
+
+if(cooling<0){
+    cooling=0;
+}
+
+h.risk =
+0.4*cooling+
+0.3*h.vulnerable+
+0.2*(h.buildingAge/40)+
+0.1*(h.temperature/40);
+
+});
+
+houses.sort((a,b)=>b.risk-a.risk);
+
+const list=document.getElementById("list");
+const map=document.getElementById("map");
+
+houses.forEach((h,i)=>{
+
+const card=document.createElement("div");
+card.className="card";
+
+card.innerHTML=`
+<h2>${i+1}위 ${h.id}</h2>
+<p>${h.address}</p>
+<p>위험도 ${(h.risk*100).toFixed(1)}%</p>
+
+<div class="bar">
+<div class="fill"
+style="width:${h.risk*100}%"></div>
+</div>
+`;
+
+card.onclick=()=>show(h);
+
+list.appendChild(card);
+
+const dot=document.createElement("div");
+dot.className="dot";
+
+if(i===0){
+    dot.style.width="30px";
+    dot.style.height="30px";
+}
+
+dot.style.left=h.x+"px";
+dot.style.top=h.y+"px";
+
+dot.onclick=()=>show(h);
+
+map.appendChild(dot);
+
+});
+
+function show(h){
+
+document.getElementById("detail").innerHTML=`
+
+<h2>${h.id}</h2>
+
+<p><b>주소</b><br>${h.address}</p>
+
+<p><b>건물 노후도</b><br>${h.buildingAge}년</p>
+
+<p><b>취약계층 여부</b><br>
+${h.vulnerable ? "예" : "아니오"}
+</p>
+
+<p><b>현재 기온</b><br>${h.temperature}℃</p>
+
+<p><b>예상 사용량</b><br>${h.expected}kWh</p>
+
+<p><b>실제 사용량</b><br>${h.actual}kWh</p>
+
+<p><b>위험도</b><br>${(h.risk*100).toFixed(1)}%</p>
+
+<button class="red"
+onclick="alert('119 지원 요청 완료')">
+🚑 119 지원 요청
+</button>
+
+<button class="blue"
+onclick="alert('방문 확인 완료')">
+🏠 방문 확인
+</button>
+
+`;
+}
+
+</script>
+
+</body>
+</html>
